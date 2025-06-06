@@ -1,13 +1,19 @@
---[[ 
-  Seed Spawner - Auto Inventory UI
-  Execute using:
-  loadstring(game:HttpGet("https://raw.githubusercontent.com/Carters-Development/Spawner/main/spawner.lua"))()
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
+
+-- Collect seeds dynamically: all children of ReplicatedStorage that have a Name and are of class Tool or Model
+local function getAvailableSeeds()
+	local seeds = {}
+	for _, child in pairs(ReplicatedStorage:GetChildren()) do
+		-- Adjust this if seeds have a different class
+		if child:IsA("Tool") or child:IsA("Model") then
+			table.insert(seeds, child.Name)
+		end
+	end
+	return seeds
+end
 
 -- UI
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -42,27 +48,45 @@ button.BackgroundColor3 = Color3.fromRGB(80, 180, 100)
 button.TextScaled = true
 button.TextColor3 = Color3.new(1, 1, 1)
 
--- Spawning Logic
+-- Spawn logic
 button.MouseButton1Click:Connect(function()
 	local name = input.Text
 	if not name or name == "" then return end
 
-	local folder = ReplicatedStorage  -- Seeds are directly here
-	local model = folder:FindFirstChild(name)
+	-- Get all available seeds dynamically
+	local seeds = getAvailableSeeds()
 
-	if model and player:FindFirstChild("Backpack") then
-		local clone = model:Clone()
-		clone.Parent = player.Backpack
-		StarterGui:SetCore("SendNotification", {
-			Title = "✅ Spawned",
-			Text = name.." added to inventory!",
-			Duration = 3
-		})
+	-- Check if the input name is among available seeds (case sensitive)
+	local foundSeed = nil
+	for _, seedName in ipairs(seeds) do
+		if seedName == name then
+			foundSeed = seedName
+			break
+		end
+	end
+
+	if foundSeed then
+		local seedInstance = ReplicatedStorage:FindFirstChild(foundSeed)
+		if seedInstance and player:FindFirstChild("Backpack") then
+			local clone = seedInstance:Clone()
+			clone.Parent = player.Backpack
+			StarterGui:SetCore("SendNotification", {
+				Title = "✅ Spawned",
+				Text = foundSeed .. " added to inventory!",
+				Duration = 3
+			})
+		else
+			StarterGui:SetCore("SendNotification", {
+				Title = "❌ Error",
+				Text = "Could not clone the seed.",
+				Duration = 3
+			})
+		end
 	else
 		StarterGui:SetCore("SendNotification", {
 			Title = "❌ Not Found",
-			Text = "Seed '"..name.."' not found!",
-			Duration = 3
+			Text = "Seed '" .. name .. "' not found! Available seeds: " .. table.concat(seeds, ", "),
+			Duration = 6
 		})
 	end
 end)
