@@ -47,7 +47,7 @@ button.MouseButton1Click:Connect(function()
 	local name = input.Text
 	if not name or name == "" then return end
 
-	local folder = ReplicatedStorage:FindFirstChild("Seeds") or ReplicatedStorage
+	local folder = ReplicatedStorage  -- Seeds are directly here
 	local model = folder:FindFirstChild(name)
 
 	if model and player:FindFirstChild("Backpack") then
